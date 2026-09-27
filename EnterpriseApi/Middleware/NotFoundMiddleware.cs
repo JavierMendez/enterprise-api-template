@@ -3,13 +3,16 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace EnterpriseApi.Middleware;
 
-public class NotFoundMiddleware
+public class NotFoundMiddleware()
 {
     private readonly RequestDelegate _next;
 
-    public NotFoundMiddleware(RequestDelegate next)
+    private readonly ILogger<NotFoundMiddleware> _logger;
+
+    public NotFoundMiddleware(RequestDelegate next, ILogger<NotFoundMiddleware> logger)
     {
         _next = next;
+        _logger = logger;
     }
     
     public async Task InvokeAsync(HttpContext context)
@@ -18,6 +21,10 @@ public class NotFoundMiddleware
 
         if (context.Response.StatusCode == StatusCodes.Status404NotFound)
         {
+            _logger.LogWarning("Recurso no encontrado: {Path} | TraceId: {TraceId}", 
+                context.Request.Path, 
+                context.TraceIdentifier);
+            
             var problemDetails = new ProblemDetails
             {
                 Status = StatusCodes.Status404NotFound,
