@@ -1,3 +1,9 @@
+using OpenTelemetry;
+using OpenTelemetry.Logs;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
+
 using EnterpriseApi.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -5,6 +11,28 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+
+// Add OpenTelemetry
+builder.Services.AddOpenTelemetry()
+.ConfigureResource(resource => resource.AddService(builder.Configuration["OTEL_SERVICE_NAME"]))
+.WithTracing(tracing => 
+{
+    tracing.AddAspNetCoreInstrumentation();
+    tracing.AddOtlpExporter();
+})
+.WithMetrics(metrics => 
+{
+    metrics.AddAspNetCoreInstrumentation();
+    metrics.AddOtlpExporter();
+});
+
+builder.Logging.AddOpenTelemetry(options => 
+{
+    options.IncludeFormattedMessage = true;
+    options.IncludeScopes = true;
+    options.AddOtlpExporter();
+});
+
 builder.Services.AddProblemDetails(options => 
 {
     options.CustomizeProblemDetails = context =>
