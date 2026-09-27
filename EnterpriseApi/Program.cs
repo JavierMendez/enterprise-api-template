@@ -5,6 +5,7 @@ using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 
 using EnterpriseApi.Middleware;
+using EnterpriseApi.Features.HealthChecks;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,7 +18,10 @@ builder.Services.AddOpenTelemetry()
 .ConfigureResource(resource => resource.AddService(builder.Configuration["OTEL_SERVICE_NAME"]))
 .WithTracing(tracing => 
 {
-    tracing.AddAspNetCoreInstrumentation();
+    tracing.AddAspNetCoreInstrumentation(options => 
+    {
+        options.Filter = (httpContext) => !httpContext.Request.Path.StartsWithSegments("/live") && !httpContext.Request.Path.StartsWithSegments("/ready");
+    });
     tracing.AddOtlpExporter();
 })
 .WithMetrics(metrics => 
@@ -45,6 +49,7 @@ builder.Services.AddProblemDetails(options =>
     };
 });
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services.AddFeatureChecks();
 
 var app = builder.Build();
 
@@ -56,6 +61,8 @@ if (app.Environment.IsDevelopment())
 app.UseNotFoundMiddleware();
 app.UseExceptionHandler();
 app.UseHttpsRedirection();
+
+app.MapFeatureHealthCheckEndpoint();
 
 var summaries = new[]
 {
