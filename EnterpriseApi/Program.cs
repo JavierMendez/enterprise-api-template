@@ -1,9 +1,22 @@
+using EnterpriseApi.Middleware;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
-builder.Services.AddProblemDetails();
+builder.Services.AddProblemDetails(options => 
+{
+    options.CustomizeProblemDetails = context =>
+    {
+        context.ProblemDetails.Title = "Error";
+        context.ProblemDetails.Status = StatusCodes.Status500InternalServerError;
+        context.ProblemDetails.Detail = "Ocurrió un error interno.";
+        context.ProblemDetails.Instance = context.HttpContext.Request.Path;
+        context.ProblemDetails.Extensions["traceId"] = context.HttpContext.TraceIdentifier;
+    };
+});
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
 var app = builder.Build();
 
@@ -12,7 +25,8 @@ if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
-
+app.UseNotFoundMiddleware();
+app.UseExceptionHandler();
 app.UseHttpsRedirection();
 
 var summaries = new[]
