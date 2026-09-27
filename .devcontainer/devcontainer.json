@@ -1,16 +1,23 @@
 {
     "name": "C# Dev Container",
     "image": "mcr.microsoft.com/devcontainers/dotnet:1-10.0",
-  
+    // 1. Eliminamos las "features" problemáticas y montamos directamente el socket de Docker
+    "mounts": [
+      "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
+    ],
+    // 2. Ejecutar como root dentro del contenedor para garantizar permisos sobre el socket
+    "remoteUser": "root",
+    
     "customizations": {
       "vscode": {
         "extensions": [
-          "ms-dotnettools.csdevkit"
+          "ms-dotnettools.csdevkit",
+          "ms-azuretools.vscode-docker"
         ]
       }
     },
   
-    "forwardPorts": [5000, 5001],
+    "forwardPorts": [5000, 5001, 18888, 4317, 4318],
   
     "postCreateCommand": "dotnet restore"
   }
